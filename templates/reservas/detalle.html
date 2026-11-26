@@ -15,6 +15,7 @@
         </tbody></table></div>
         {% if reserva.saldo > 0 %}<h2>Registrar un pago</h2>
         <form method="post" action="{% url 'pago_crear' reserva.pk %}" class="formulario-ancho">{% csrf_token %}
+            {% if pago_form.errors %}<div class="error-msj" role="alert">No se pudo registrar el pago. Revisá los campos indicados abajo.</div>{% endif %}
             {% for error in pago_form.non_field_errors %}<p class="error-msj">{{ error }}</p>{% endfor %}
             {% for field in pago_form %}<div class="grupo-form"><label class="label-form" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="error-msj">{{ error }}</p>{% endfor %}</div>{% endfor %}
             <button type="submit" class="btn-guardar">Guardar pago</button>
