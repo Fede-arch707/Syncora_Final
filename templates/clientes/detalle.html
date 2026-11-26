@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Ficha de {{ cliente.nombre }} · El Poli{% endblock %}
+{% block content %}
+<main class="app-shell">{% include 'partials/cabecera.html' %}
+    <section class="panel pagina-formulario">
+        <div class="section-heading"><div><span class="section-kicker">Ficha de cliente</span><h1>{{ cliente.nombre }}</h1><p>DNI {{ cliente.dni }} · {{ cliente.telefono|default:'Sin teléfono' }}</p></div><a href="{% url 'calendario' %}" class="btn-calendario">Volver al calendario</a></div>
+        <div class="detalle-resumen"><p><strong>Dirección:</strong> {{ cliente.direccion|default:'—' }}</p><p><strong>Observaciones:</strong> {{ cliente.observaciones|default:'—' }}</p><p><strong>Condición:</strong> {% if cliente.vetado %}Vetado: no puede reservar{% else %}Habilitado{% endif %}</p></div>
+        <div class="acciones-detalle"><a class="btn-guardar" href="{% url 'cliente_editar' cliente.pk %}">Editar cliente</a>{% if not cliente.vetado %}<a class="btn-calendario" href="{% url 'reserva_crear' %}?cliente={{ cliente.pk }}">Nueva reserva</a>{% endif %}
+            <form method="post" action="{% url 'cliente_borrar' cliente.pk %}" onsubmit="return confirm('¿Borrar cliente? Si tiene reservas, no se podrá eliminar.');">{% csrf_token %}<button type="submit" class="btn-borrar">Borrar cliente</button></form>
+        </div>
+        <h2>Historial de reservas</h2>
+        <div class="tabla-responsive"><table><thead><tr><th>Fecha</th><th>Salón</th><th>Estado</th><th>Total</th><th>Ver</th></tr></thead><tbody>
+            {% for reserva in reservas %}
+            <tr><td>{{ reserva.fecha|date:'d/m/Y' }}</td><td>{{ reserva.salon }}</td><td>{{ reserva.get_estado_display }}</td><td>${{ reserva.total }}</td><td><a class="btn-editar" href="{% url 'reserva_detalle' reserva.pk %}">Detalle</a></td></tr>
+            {% empty %}<tr><td colspan="5">Sin reservas.</td></tr>{% endfor %}
+        </tbody></table></div>
+    </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{% static 'Js/main.js' %}"></script>{% endblock %}

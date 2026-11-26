@@ -1,0 +1,16 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#165f4c">
+    <title>{% block title %}El Poli · Gestión de Salón{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'estilos/Style.css' %}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% include 'partials/mensajes.html' %}
+    {% block content %}{% endblock %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

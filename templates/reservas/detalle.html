@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Reserva del {{ reserva.fecha|date:'d/m/Y' }} · El Poli{% endblock %}
+{% block content %}
+<main class="app-shell">{% include 'partials/cabecera.html' %}
+    <section class="panel pagina-formulario">
+        <div class="section-heading"><div><span class="section-kicker">Detalle de reserva</span><h1>{{ reserva.fecha|date:'d/m/Y' }}</h1><p>{{ reserva.salon }} · {{ reserva.get_estado_display }} · <a href="{% url 'cliente_detalle' reserva.cliente.pk %}">{{ reserva.cliente.nombre }}</a></p></div><a href="{% url 'calendario' %}?anio={{ reserva.fecha.year }}&amp;salon={{ reserva.salon.pk }}" class="btn-calendario">Volver</a></div>
+        <div class="detalle-resumen"><p><strong>Evento:</strong> {{ reserva.tipo_evento|default:'Sin categoría' }}</p><p><strong>Cuotas previstas:</strong> {{ reserva.cuotas_totales }}</p><p><strong>Total:</strong> ${{ reserva.total }}</p><p><strong>Pagado:</strong> ${{ reserva.total_pagado }} ({{ reserva.cantidad_pagos }} pagos registrados)</p><p><strong>Saldo:</strong> ${{ reserva.saldo }}</p><p><strong>Notas:</strong> {{ reserva.notas|default:'—' }}</p></div>
+        <div class="acciones-detalle"><a href="{% url 'reserva_editar' reserva.pk %}" class="btn-guardar">Editar reserva</a><form method="post" action="{% url 'reserva_borrar' reserva.pk %}" onsubmit="return confirm('¿Borrar esta reserva y todos sus pagos?');">{% csrf_token %}<button type="submit" class="btn-borrar">Borrar reserva</button></form></div>
+        <h2>Historial de pagos</h2>
+        <div class="tabla-responsive"><table><thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Nota</th></tr></thead><tbody>
+            {% if reserva.pagado_inicial %}<tr><td>Pago inicial</td><td>${{ reserva.pagado_inicial }}</td><td>Inicial</td><td>Registrado con la reserva</td></tr>{% endif %}
+            {% for pago in reserva.pagos.all %}<tr><td>{{ pago.fecha|date:'d/m/Y' }}</td><td>${{ pago.monto }}</td><td>{{ pago.get_metodo_display }}</td><td>{{ pago.nota|default:'—' }}</td></tr>
+            {% empty %}{% if not reserva.pagado_inicial %}<tr><td colspan="4">Todavía no hay pagos registrados.</td></tr>{% endif %}{% endfor %}
+        </tbody></table></div>
+        {% if reserva.saldo > 0 %}<h2>Registrar un pago</h2>
+        <form method="post" action="{% url 'pago_crear' reserva.pk %}" class="formulario-ancho">{% csrf_token %}
+            {% for error in pago_form.non_field_errors %}<p class="error-msj">{{ error }}</p>{% endfor %}
+            {% for field in pago_form %}<div class="grupo-form"><label class="label-form" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="error-msj">{{ error }}</p>{% endfor %}</div>{% endfor %}
+            <button type="submit" class="btn-guardar">Guardar pago</button>
+        </form>{% endif %}
+    </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{% static 'Js/main.js' %}"></script>{% endblock %}

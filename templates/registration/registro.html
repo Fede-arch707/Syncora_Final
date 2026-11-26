@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Registro · El Poli{% endblock %}
+{% block body_class %}pagina-login{% endblock %}
+{% block content %}
+<div class="login-layout">
+    <section class="login-presentacion"><div class="login-brand"><span class="brand-mark brand-mark-grande">EP</span><span>El Poli</span></div><div class="login-copy"><span class="eyebrow eyebrow-claro">Nueva cuenta</span><h1>Administrá tus reservas.</h1><p>Creá un usuario con una contraseña segura.</p></div></section>
+    <section class="login-panel"><div class="login-caja">
+        <div class="login-heading"><h2>Crear cuenta</h2><p>Todos los campos menos el correo son obligatorios.</p></div>
+        <form method="post">{% csrf_token %}
+            {% for field in form %}
+                <div class="grupo-form"><label class="label-form" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="error-msj">{{ error }}</p>{% endfor %}</div>
+            {% endfor %}
+            <button class="btn-ingresar" type="submit">Registrarme</button>
+        </form>
+        <p class="pie-formulario"><a href="{% url 'login' %}">Volver al ingreso</a></p>
+    </div></section>
+</div>
+{% endblock %}

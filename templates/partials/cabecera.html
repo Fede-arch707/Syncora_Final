@@ -1,0 +1,14 @@
+<header class="topbar">
+    <a class="brand" href="{% url 'calendario' %}" aria-label="Ir al inicio">
+        <span class="brand-mark" aria-hidden="true">EP</span>
+        <span class="brand-copy"><strong>El Poli</strong><small>Gestión de eventos</small></span>
+    </a>
+    <div class="topbar-actions">
+        <button id="btnTema" class="btn-icono" type="button" onclick="cambiarModo()" title="Cambiar tema">
+            <span class="theme-icon" aria-hidden="true">◐</span><span class="theme-label">Tema</span>
+        </button>
+        <form action="{% url 'logout' %}" method="post" class="form-inline">
+            {% csrf_token %}<button class="btn-salir" type="submit">Cerrar sesión</button>
+        </form>
+    </div>
+</header>

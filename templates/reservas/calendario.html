@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Calendario · El Poli{% endblock %}
+{% block content %}
+<main class="app-shell">
+    {% include 'partials/cabecera.html' %}
+    <section class="hero-dashboard">
+        <div class="hero-copy"><span class="eyebrow">Panel de administración</span><h1>Organizá cada evento desde un solo lugar.</h1><p>Consultá fechas disponibles, revisá reservas y administrá la información de tus clientes.</p></div>
+        <div class="hero-stat"><span class="hero-stat-label">Clientes cargados</span><strong>{{ filas_tabla|length }}</strong><small>en la planilla actual</small></div>
+    </section>
+    <section class="panel panel-calendario">
+        <div class="section-heading">
+            <div><span class="section-kicker">Disponibilidad {{ anio }}</span><h2>Calendario de reservas</h2><p>Elegí un día disponible para reservarlo, o uno ocupado para ver pagos y detalles.</p></div>
+            <div class="controles-calendario">
+                <div class="anio-nav" aria-label="Cambiar año">
+                    <a href="?anio={{ anio_anterior }}{% if salon %}&amp;salon={{ salon.pk }}{% endif %}" aria-label="Año anterior: {{ anio_anterior }}" title="Año anterior">‹</a>
+                    <strong>{{ anio }}</strong>
+                    <a href="?anio={{ anio_siguiente }}{% if salon %}&amp;salon={{ salon.pk }}{% endif %}" aria-label="Año siguiente: {{ anio_siguiente }}" title="Año siguiente">›</a>
+                </div>
+                <div class="calendario-nav" aria-label="Navegación de meses">
+                    <button id="mesesAnterior" class="btn-calendario" type="button" onclick="cambiarMeses(-1)" disabled>← Anterior</button>
+                    <button id="mesesSiguiente" class="btn-calendario btn-calendario-principal" type="button" onclick="cambiarMeses(1)">Siguiente →</button>
+                </div>
+            </div>
+        </div>
+        <div class="calendario-leyenda">
+            <span class="badge badge-disponible"><i></i> Disponible</span>
+            <span class="badge badge-reservado"><i></i> Reservado</span>
+            <span class="badge badge-alquilado"><i></i> Alquilado</span>
+        </div>
+        {% if salones|length > 1 %}
+        <form method="get" class="filtro-salon"><input type="hidden" name="anio" value="{{ anio }}"><label for="salonFiltro">Salón</label>
+            <select name="salon" id="salonFiltro" class="input-texto" onchange="this.form.submit()">
+                {% for opcion in salones %}<option value="{{ opcion.pk }}" {% if salon.pk == opcion.pk %}selected{% endif %}>{{ opcion.nombre }}</option>{% endfor %}
+            </select>
+        </form>
+        {% endif %}
+        {% if not salon %}<p>No hay salones activos. Creá uno en el <a href="{% url 'admin:index' %}">administrador</a>.</p>{% endif %}
+        <div class="calendario-anual">
+            {% for mes in calendario_anual %}
+            <article class="mes-cajita" {% if forloop.counter0 >= 3 %}hidden{% endif %}><div class="mes-titulo">{{ mes.nombre }}</div>
+                <div class="dias-semana" aria-hidden="true"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
+                <div class="almanaque">
+                    {% for dia in mes.dias %}
+                    {% if not dia %}<div class="dia-vacio"></div>
+                    {% elif dia.reserva %}
+                        <a class="dia {{ dia.estado }}" href="{% url 'reserva_detalle' dia.reserva.pk %}" title="Ver reserva de {{ dia.reserva.cliente.nombre }}" aria-label="{{ dia.fecha }}: {{ dia.estado }}">{{ dia.numero }}</a>
+                    {% else %}
+                        <a class="dia disponible" href="{% url 'reserva_crear' %}?fecha={{ dia.fecha }}{% if salon %}&amp;salon={{ salon.pk }}{% endif %}" aria-label="{{ dia.fecha }}: disponible">{{ dia.numero }}</a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="panel panel-clientes">
+        <div class="section-heading section-heading-clientes">
+            <div><span class="section-kicker">Base de clientes</span><h2>Planilla de clientes</h2><p>Buscá, editá, consultá su historial o agregá fichas.</p></div>
+            <div class="acciones-clientes"><a class="btn-excel btn-excel-secundario" href="{% url 'clientes_exportar_excel' %}" title="Descargar clientes, reservas y pagos en formato Excel">↓ Exportar Excel</a><button onclick="abrirModal()" class="btn-agregar" type="button"><span aria-hidden="true">＋</span> Nuevo cliente</button></div>
+        </div>
+        <div class="toolbar-tabla"><div class="tabla-buscador"><span class="buscador-icono">⌕</span><input type="search" id="inputBuscador" class="input-buscador" onkeydown="buscarConEnter(event)" oninput="buscarEnTabla()" placeholder="Buscar por nombre, DNI, teléfono o estado..."><button onclick="buscarEnTabla()" class="btn-buscar" type="button">Buscar</button></div><span class="contador-registros">{{ filas_tabla|length }} registros</span></div>
+        <div class="tabla-responsive"><table>
+            <thead><tr><th>Cliente</th><th>DNI</th><th>Dirección</th><th>Teléfono</th><th>Última reserva</th><th>Estado</th><th>Evento / observaciones</th><th class="th-acciones">Acciones</th></tr></thead>
+            <tbody id="cuerpoTabla">
+                {% for fila in filas_tabla %}
+                <tr>
+                    <td data-label="Cliente"><strong class="cliente-nombre"><a href="{% url 'cliente_detalle' fila.cliente.pk %}">{{ fila.cliente.nombre }}</a></strong></td>
+                    <td data-label="DNI"><span class="dato-secundario">{{ fila.cliente.dni }}</span></td>
+                    <td data-label="Dirección">{{ fila.cliente.direccion|default:'—' }}</td>
+                    <td data-label="Teléfono">{{ fila.cliente.telefono|default:'—' }}</td>
+                    <td data-label="Última reserva">{% if fila.ultima %}<a href="{% url 'reserva_detalle' fila.ultima.pk %}">{{ fila.ultima.fecha|date:'d/m/Y' }}</a>{% else %}—{% endif %}</td>
+                    <td data-label="Estado">
+                        {% if fila.cliente.vetado %}<span class="estado-cuenta cuenta-deuda">Vetado</span>
+                        {% elif fila.ultima %}<span class="estado-cuenta cuenta-ok">Con reservas</span>
+                        {% else %}<span class="estado-cuenta cuenta-neutra">Sin reservas</span>{% endif %}
+                    </td>
+                    <td data-label="Evento" class="celda-evento">{{ fila.cliente.observaciones|default:'—' }}</td>
+                    <td data-label="Acciones" class="celda-acciones"><a class="btn-editar" href="{% url 'cliente_editar' fila.cliente.pk %}">Editar</a><a class="btn-borrar" href="{% url 'cliente_detalle' fila.cliente.pk %}">Ver ficha</a></td>
+                </tr>
+                {% empty %}<tr class="fila-vacia"><td colspan="8">Todavía no hay clientes cargados.</td></tr>{% endfor %}
+            </tbody>
+        </table></div>
+    </section>
+</main>
+<div id="miModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloNuevoCliente">
+    <div class="modal-contenido">
+        <div class="modal-encabezado"><div><span class="modal-kicker">Nueva ficha</span><h2 id="tituloNuevoCliente" class="modal-titulo">Agregar cliente</h2></div><button type="button" class="modal-cerrar" onclick="cerrarModal()" aria-label="Cerrar">×</button></div>
+        <form action="{% url 'cliente_crear' %}" method="post">{% csrf_token %}
+            <div class="grupo-form fecha-seleccionada"><label class="label-form" for="inputFecha">Fecha seleccionada (opcional)</label><input id="inputFecha" type="date" name="fecha" class="input-texto input-fecha"></div>
+            <input type="hidden" name="salon" value="{{ salon.pk }}">
+            <div class="grupo-form"><label class="label-form" for="nuevo_nombre">Nombre y apellido</label><input type="text" id="nuevo_nombre" name="nombre" class="input-texto" required maxlength="120"></div>
+            <div class="fila-form fila-form-2">
+                <div class="grupo-form"><label class="label-form" for="nuevo_dni">DNI</label><input type="text" id="nuevo_dni" name="dni" class="input-texto" required placeholder="Sin puntos" maxlength="16"></div>
+                <div class="grupo-form"><label class="label-form" for="nuevo_telefono">Teléfono</label><input type="text" id="nuevo_telefono" name="telefono" class="input-texto" maxlength="30"></div>
+            </div>
+            <div class="grupo-form"><label class="label-form" for="nuevo_direccion">Dirección</label><input type="text" id="nuevo_direccion" name="direccion" class="input-texto" maxlength="200"></div>
+            <div class="grupo-form"><label class="label-form" for="nuevo_observaciones">Observaciones</label><textarea id="nuevo_observaciones" name="observaciones" rows="3" class="input-texto"></textarea></div>
+            <div class="grupo-form"><label><input type="checkbox" name="vetado"> Cliente vetado (no podrá reservar)</label></div>
+            <div class="grupo-form"><label class="label-form" for="nuevo_estado">Estado de reserva (opcional)</label><select name="estado" id="nuevo_estado" class="input-texto"><option value="">Sin reserva · solo cargar cliente</option><option value="reservado">Reservado</option><option value="alquilado">Alquilado</option></select></div>
+            <div class="fila-form"><div class="grupo-form"><label class="label-form" for="nuevo_total">Total ($)</label><input type="number" min="0.01" step="0.01" id="nuevo_total" name="total" class="input-texto" placeholder="50000"></div><div class="grupo-form"><label class="label-form" for="nuevo_cuotas">Cuotas</label><input type="number" min="1" name="cuotas_totales" id="nuevo_cuotas" value="1" class="input-texto"></div><div class="grupo-form"><label class="label-form" for="nuevo_pagado">Pago inicial ($)</label><input type="number" min="0" step="0.01" id="nuevo_pagado" name="pagado_inicial" value="0" class="input-texto"></div></div>
+            <div class="modal-botones"><button type="button" onclick="cerrarModal()" class="btn-cancelar">Cancelar</button><button type="submit" class="btn-guardar">Guardar cliente</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'Js/main.js' %}"></script>{% endblock %}
