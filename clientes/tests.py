@@ -32,9 +32,7 @@ class ClientesTests(TestCase):
         self.assertEqual(Cliente.objects.count(), 1)
         respuesta = self.client.post(reverse('cliente_crear'), datos)
         self.assertEqual(respuesta.status_code, 200)
-        self.assertContains(respuesta, 'Cliente', status_code=200)
-        self.assertEqual(Cliente.objects.count(), 1)
-
+        self.assertContains(respuesta,"Este DNI ya está registrado",status_code=200)
     def test_no_se_elimina_cliente_con_reservas(self):
         self.client.force_login(self.user)
         cliente = Cliente.objects.create(nombre='Marta', dni='40000111')
